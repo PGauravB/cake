@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Birthday Cake Blow Out</title>
+  <style>
+    body {
+      background: #f0e6f6;
+      font-family: sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      flex-direction: column;
+    }
+
+    h1 {
+      text-align: center;
+      color: #6a1b9a;
+    }
+
+    .cake {
+      width: 200px;
+      height: 100px;
+      background: #ffcc80;
+      border-radius: 10px;
+      position: relative;
+      margin-top: 50px;
+    }
+
+    .candle {
+      width: 20px;
+      height: 60px;
+      background: #fff;
+      position: absolute;
+      top: -60px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-radius: 5px;
+    }
+
+    .flame {
+      width: 10px;
+      height: 20px;
+      background: orange;
+      border-radius: 50%;
+      position: absolute;
+      top: -20px;
+      left: 50%;
+      transform: translateX(-50%);
+      animation: flicker 0.2s infinite alternate;
+    }
+
+    @keyframes flicker {
+      0% { transform: translateX(-50%) scaleY(1); opacity: 1; }
+      100% { transform: translateX(-50%) scaleY(1.2); opacity: 0.8; }
+    }
+
+    .blown {
+      display: none;
+    }
+
+    .message {
+      margin-top: 30px;
+      font-size: 24px;
+      color: #d32f2f;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>Blow Out the Candle!</h1>
+  <div class="cake">
+    <div class="candle">
+      <div class="flame"></div>
+    </div>
+  </div>
+  <div class="message">🎉 Candle Blown! Happy Birthday! 🎉</div>
+
+  <script>
+    // Access microphone
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then(stream => {
+        const audioContext = new AudioContext();
+        const microphone = audioContext.createMediaStreamSource(stream);
+        const analyser = audioContext.createAnalyser();
+        analyser.fftSize = 256;
+        microphone.connect(analyser);
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+        function detectBlow() {
+          analyser.getByteFrequencyData(dataArray);
+          const volume = dataArray.reduce((a, b) => a + b) / dataArray.length;
+
+          // If volume exceeds threshold, blow out candle
+          if (volume > 100) {
+            document.querySelector('.flame').classList.add('blown');
+            document.querySelector('.message').style.display = 'block';
+          } else {
+            requestAnimationFrame(detectBlow);
+          }
+        }
+
+        detectBlow();
+      })
+      .catch(err => {
+        alert("Microphone access is required to blow out the candle!");
+        console.error(err);
+      });
+  </script>
+</body>
+</html>
