@@ -35,10 +35,10 @@
 
         // Configuration - Increased heart count and glow
         let config = {
-            glowIntensity: 0.5,  // Increased glow
+            glowIntensity: 0.3,  // Increased glow
             pulseSpeed: 0.6,
-            heartCount: 15,      // Many more hearts
-            movementSpeed:1,  // Slower movement
+            heartCount: 40,      // Many more hearts
+            movementSpeed: 1,  // Slower movement
             colors: [
                 {r: 255, g: 0, b: 128},    // Bright pink
                 {r: 255, g: 20, b: 147},   // Deep pink
@@ -181,16 +181,9 @@
         let hearts = [];
         function initHearts() {
             hearts = [];
-            // Create many hearts with overlapping positions
+            // Create hearts based on config.heartCount
             for (let i = 0; i < config.heartCount; i++) {
                 hearts.push(new Heart());
-            }
-            
-            // Add some extra small hearts in gaps
-            for (let i = 0; i < 20; i++) {
-                const smallHeart = new Heart();
-                smallHeart.size = 8 + Math.random() * 12;
-                hearts.push(smallHeart);
             }
         }
 
@@ -245,32 +238,15 @@
             requestAnimationFrame(animate);
         }
 
-        // Auto-adjust heart count based on screen size
-        function adjustHeartCount() {
-            const area = width * height;
-            const baseArea = 1920 * 1080;
-            const scale = Math.sqrt(area / baseArea); // Use square root for better scaling
-            
-            // More hearts for larger screens
-            config.heartCount = Math.max(60, Math.floor(80 * scale));
-            
-            // Add extra hearts for very large screens
-            if (scale > 1.5) {
-                config.heartCount = Math.floor(config.heartCount * 1.3);
-            }
-            
-            initHearts();
-        }
-
         // Initialize and start animation
-        adjustHeartCount();
+        initHearts();
         requestAnimationFrame(animate);
         
-        // Re-adjust on resize
+        // Re-initialize on resize
         window.addEventListener('resize', function() {
             width = canvas.width = window.innerWidth;
             height = canvas.height = window.innerHeight;
-            adjustHeartCount();
+            initHearts();
         });
     </script>
 </body>
