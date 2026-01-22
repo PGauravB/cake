@@ -37,7 +37,8 @@
         let config = {
             glowIntensity: 0.8,
             pulseSpeed: 0.5,
-            movementSpeed: 0.3,
+            heartCount: 200,
+            movementSpeed: 0.5,
             colors: [
                 {r: 255, g: 0, b: 128},    // Bright pink
                 {r: 255, g: 20, b: 147},   // Deep pink
@@ -51,47 +52,36 @@
 
         // Heart class
         class Heart {
-            constructor(gridX, gridY, gridCols, gridRows) {
-                // Calculate base position in grid
-                const cellWidth = width / gridCols;
-                const cellHeight = height / gridRows;
-                
-                // Center of grid cell with random offset (but limited to stay within cell)
-                const baseX = (gridX + 0.5) * cellWidth;
-                const baseY = (gridY + 0.5) * cellHeight;
-                
-                // Random offset (limited to 30% of cell size)
-                const maxOffsetX = cellWidth * 0.3;
-                const maxOffsetY = cellHeight * 0.3;
-                
-                this.baseX = baseX;
-                this.baseY = baseY;
-                this.x = baseX + (Math.random() - 0.5) * maxOffsetX;
-                this.y = baseY + (Math.random() - 0.5) * maxOffsetY;
-                
-                this.size = 25 + Math.random() * 30;
+            constructor() {
+                this.reset();
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+            }
+            
+            reset() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.size = 20 + Math.random() * 40;
                 this.color = config.colors[Math.floor(Math.random() * config.colors.length)];
                 this.glowIntensity = 0.5 + Math.random() * 0.5;
-                this.pulseSpeed = 0.3 + Math.random() * 0.7;
+                this.pulseDirection = Math.random() > 0.5 ? 1 : -1;
+                this.pulseSpeed = 0.5 + Math.random() * 0.5;
                 this.rotation = Math.random() * Math.PI * 2;
-                this.rotationSpeed = (Math.random() - 0.5) * 0.015;
-                
-                // Subtle floating movement
-                this.floatX = 0;
-                this.floatY = 0;
-                this.floatSpeedX = 0.1 + Math.random() * 0.2;
-                this.floatSpeedY = 0.1 + Math.random() * 0.2;
-                this.floatOffsetX = Math.random() * Math.PI * 2;
-                this.floatOffsetY = Math.random() * Math.PI * 2;
-                this.floatRadius = Math.min(cellWidth, cellHeight) * 0.1;
-                
+                this.rotationSpeed = (Math.random() - 0.5) * 0.02;
+                this.vx = (Math.random() - 0.5) * config.movementSpeed;
+                this.vy = (Math.random() - 0.5) * config.movementSpeed;
                 this.pulseOffset = Math.random() * Math.PI * 2;
             }
             
             update(time) {
-                // Subtle floating movement around base position
-                this.floatX = Math.sin(time * this.floatSpeedX + this.floatOffsetX) * this.floatRadius;
-                this.floatY = Math.cos(time * this.floatSpeedY + this.floatOffsetY) * this.floatRadius * 0.7;
+                // Update position with boundary checking
+                this.x += this.vx;
+                this.y += this.vy;
+                
+                if (this.x < -this.size) this.x = width + this.size;
+                if (this.x > width + this.size) this.x = -this.size;
+                if (this.y < -this.size) this.y = height + this.size;
+                if (this.y > height + this.size) this.y = -this.size;
                 
                 // Update rotation
                 this.rotation += this.rotationSpeed;
@@ -103,11 +93,8 @@
             }
             
             draw(ctx) {
-                const drawX = this.baseX + this.floatX;
-                const drawY = this.baseY + this.floatY;
-                
                 ctx.save();
-                ctx.translate(drawX, drawY);
+                ctx.translate(this.x, this.y);
                 ctx.rotate(this.rotation);
                 this.drawHeart(ctx);
                 ctx.restore();
@@ -186,50 +173,13 @@
             }
         }
 
-        // Create hearts in a grid with random variations
+        // Create hearts
         let hearts = [];
-        
         function initHearts() {
             hearts = [];
-            
-            // Calculate grid based on screen size
-            const aspectRatio = width / height;
-            let cols, rows;
-            
-            if (aspectRatio > 1.5) { // Wide screen
-                cols = Math.floor(width / 150);
-                rows = Math.floor(cols / aspectRatio);
-            } else if (aspectRatio < 0.7) { // Tall screen
-                rows = Math.floor(height / 150);
-                cols = Math.floor(rows * aspectRatio);
-            } else { // Square-ish screen
-                cols = Math.floor(width / 160);
-                rows = Math.floor(height / 160);
+            for (let i = 0; i < config.heartCount; i++) {
+                hearts.push(new Heart());
             }
-            
-            // Ensure minimum number of hearts
-            cols = Math.max(5, cols);
-            rows = Math.max(4, rows);
-            
-            // Create hearts in grid positions
-            for (let y = 0; y < rows; y++) {
-                for (let x = 0; x < cols; x++) {
-                    // Skip some random cells for more organic distribution (15% chance)
-                    if (Math.random() > 0.15) {
-                        hearts.push(new Heart(x, y, cols, rows));
-                    }
-                }
-            }
-            
-            // If we have too few hearts, add some extras randomly
-            const minHearts = Math.floor((width * height) / 15000);
-            while (hearts.length < minHearts) {
-                const randomCol = Math.floor(Math.random() * cols);
-                const randomRow = Math.floor(Math.random() * rows);
-                hearts.push(new Heart(randomCol, randomRow, cols, rows));
-            }
-            
-            console.log(`Created ${hearts.length} hearts in ${cols}x${rows} grid`);
         }
 
         // Animation loop
@@ -242,9 +192,8 @@
             ctx.fillRect(0, 0, width, height);
             
             // Add a subtle cosmic gradient
-            const gradient = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, Math.max(width, height) * 0.7);
-            gradient.addColorStop(0, 'rgba(30, 20, 70, 0.2)');
-            gradient.addColorStop(0.5, 'rgba(15, 10, 40, 0.3)');
+            const gradient = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, width);
+            gradient.addColorStop(0, 'rgba(20, 20, 60, 0.1)');
             gradient.addColorStop(1, 'rgba(10, 10, 30, 0.5)');
             ctx.fillStyle = gradient;
             ctx.fillRect(0, 0, width, height);
@@ -258,34 +207,25 @@
             requestAnimationFrame(animate);
         }
 
+        // Auto-adjust heart count based on screen size
+        function adjustHeartCount() {
+            const area = width * height;
+            const baseArea = 1920 * 1080;
+            const scale = area / baseArea;
+            config.heartCount = Math.max(20, Math.floor(35 * scale));
+            initHearts();
+        }
+
         // Initialize and start animation
-        initHearts();
+        adjustHeartCount();
         requestAnimationFrame(animate);
         
-        // Re-initialize on resize
+        // Re-adjust on resize
         window.addEventListener('resize', function() {
             width = canvas.width = window.innerWidth;
             height = canvas.height = window.innerHeight;
-            initHearts();
+            adjustHeartCount();
         });
-        
-        // Add some subtle mouse interaction (optional, can remove if not wanted)
-        let mouseX = width / 2;
-        let mouseY = height / 2;
-        
-        window.addEventListener('mousemove', function(e) {
-            mouseX = e.clientX;
-            mouseY = e.clientY;
-        });
-        
-        // Add touch support for mobile
-        window.addEventListener('touchmove', function(e) {
-            if (e.touches.length > 0) {
-                mouseX = e.touches[0].clientX;
-                mouseY = e.touches[0].clientY;
-                e.preventDefault();
-            }
-        }, { passive: false });
     </script>
 </body>
 </html>
